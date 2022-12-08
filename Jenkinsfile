@@ -37,16 +37,12 @@ pipeline{
                   }
              }  
         }
-      post {
-            always{
-                archiveArtifacts artifacts: '*.csv', onlyIfSuccessful: true
-                
-                mail to: "ksahadeva9478@gmail.com",
-                subject: "jenkins build:${currentBuild.currentResult}: ${env.JOB_NAME}",
-                body: "${currentBuild.currentResult}: Job ${env.JOB_NAME}\nMore Info can be found here: ${env.BUILD_URL}",
-                attachmentsPattern: '*.csv'
-                
-            cleanWs()
-            }
+     post{
+        changed{
+            mail to: "techcomsdevops@gmail.com",
+            subject: "jenkins build:${currentBuild.currentResult}: ${env.JOB_NAME}",
+            body: "${currentBuild.currentResult}: Job ${env.JOB_NAME}\nMore Info can be found here: ${env.BUILD_URL}"
         }
+    }
+
 }
