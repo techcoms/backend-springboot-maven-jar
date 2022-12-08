@@ -36,6 +36,7 @@ pipeline{
                       }
                   }
              }  
+    }
     post{
         always{
             mail to: "ksahadeva9478@gmail.com",
@@ -43,6 +44,5 @@ pipeline{
             body: "Test"
              
          }
-    }
     }
 }
