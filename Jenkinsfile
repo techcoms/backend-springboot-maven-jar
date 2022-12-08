@@ -31,14 +31,14 @@ pipeline{
             steps { 
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) { 
                     sh "docker login -u $USERNAME -p $PASSWORD "
-                    sh "docker push ${DOCKERHUB_REPO}:${BUILD_NUMBER}"
+                    sh "ocker push ${DOCKERHUB_REPO}:${BUILD_NUMBER}"
   
                       }
                   }
              }  
     }
     post{
-        success{
+        failure{
             mail to: "ksahadeva9478@gmail.com",
             subject: "jenkins build:${currentBuild.currentResult}: ${env.JOB_NAME}",
             body: "${currentBuild.currentResult}: Job ${env.JOB_NAME}\nMore Info can be found here: ${env.BUILD_URL}"
