@@ -21,7 +21,7 @@ pipeline{
         }
         stage("login to dockerhub and push image"){
             steps{
-                sh "docker login -u techcoms -p janakiram@123"
+                sh "docker login -u techcoms -p janakiraman@123"
                 sh "docker push techcoms/springboot-backend-jar"
             }
         }
