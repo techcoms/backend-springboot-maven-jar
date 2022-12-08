@@ -16,7 +16,7 @@ pipeline{
         }
         stage("build docker image"){
             steps{
-                sh "docker build -t techcoms/springboot-backend-jar ."
+                sh "docker build -t techcoms/backend-springboot-maven-jar ."
             }
         }
         stage("login to dockerhub and push image"){
