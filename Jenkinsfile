@@ -41,7 +41,7 @@ pipeline{
             mail to: "ksahadeva9478@gmail.com",
             subject: "Test Email",
             body: "Test"
-             }
+             
          }
 
     }
