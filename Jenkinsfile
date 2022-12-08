@@ -35,6 +35,14 @@ pipeline{
   
                       }
                   }
-             }     
+             }  
+        post{
+            always{
+                mail to: "ksahadeva9478@gmail.com",
+                subject: "Test Email",
+                body: "Test"
+             }
+         }
+
     }
 }
