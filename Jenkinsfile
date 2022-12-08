@@ -31,7 +31,7 @@ pipeline{
             steps { 
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) { 
                     sh "docker login -u $USERNAME -p $PASSWORD "
-                    sh "docker push ${DOCKERHUB_REPO}:${BUILD_NUMBER}"
+                    sh "ocker push ${DOCKERHUB_REPO}:${BUILD_NUMBER}"
   
                       }
                   }
