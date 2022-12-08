@@ -38,10 +38,10 @@ pipeline{
              }  
     }
     post{
-        changed{
-            emailext to: "ksahadeva9478@gmail.com",
-            subject: "jenkins build:${currentBuild.currentResult}: ${env.JOB_NAME}",
-            body: "${currentBuild.currentResult}: Job ${env.JOB_NAME}\nMore Info can be found here: ${env.BUILD_URL}"
+        always{
+            emailext to: "naivetechblog@gmail.com",
+            subject: "Test Email",
+            body: "Test"
         }
     }
 }
