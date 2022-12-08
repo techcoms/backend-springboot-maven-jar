@@ -6,7 +6,7 @@ pipeline{
     stages{
         stage("git checkout"){
             steps{
-                git branch: 'master', credentialsId: 'github-creds', url: 'https://github.com/techcoms/backend-springboot-maven-jar.git'
+                git branch: 'master', credentialsId: 'github-cred', url: 'https://github.com/techcoms/backend-springboot-maven-jar.git'
             }
         }
         stage("build artifacts with maven"){
