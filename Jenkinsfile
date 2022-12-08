@@ -1,4 +1,7 @@
-pipeline{
+pipeline{ 
+      options {
+    buildDiscarder(logRotator(numToKeepStr: '2', artifactNumToKeepStr: '6'))
+  }
     agent any
     environment {
         DOCKERHUB_REPO = "techcoms/backend-springboot-maven-jar"
