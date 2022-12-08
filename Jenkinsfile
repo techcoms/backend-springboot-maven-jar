@@ -14,7 +14,7 @@ pipeline{
     stages{
         stage("git checkout"){
             steps{
-                  git branch: '${BRANCH}', credentialsId: 'github-creds', url: '${GITHUB_URL}'
+                  git branch: "${BRANCH}", credentialsId: 'github-creds', url: "${GITHUB_URL}"
             }
         }
         stage("build artifacts with maven"){
