@@ -5,6 +5,9 @@ pipeline{
     agent any
     environment {
         DOCKERHUB_REPO = "techcoms/backend-springboot-maven-jar"
+          CREDENTAILS = "github-creds"
+          GITHUB_URL = "${params.url}"
+          BRANCH = "${params.branch}"
     }
     tools{
         maven "maven-3.8.6"
@@ -12,7 +15,7 @@ pipeline{
     stages{
         stage("git checkout"){
             steps{
-                git credentialsId: 'github-creds', url: 'https://github.com/techcoms/backend-springboot-maven-jar.git'
+                  git branch: '${BRANCH}', credentialsId: '${CREDENTAILS}', url: '${GITHUB_URL}'
             }
         }
         stage("build artifacts with maven"){
