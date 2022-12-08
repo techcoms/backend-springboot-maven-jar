@@ -6,7 +6,7 @@ pipeline{
     stages{
         stage(git checkout){
             steps{
-                gitclone https://github.com/jyothi9843/springboot-hello.git
+                git branch: 'master', credentialsId: 'github-creds', url: 'https://github.com/techcoms/backend-springboot-maven-jar.git'
             }
         }
         stage(build with maven){
