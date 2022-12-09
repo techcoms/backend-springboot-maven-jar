@@ -36,7 +36,7 @@ pipeline{
                       }
                   }
              }  
-        }
+          }
     post{
         changed{
             mail to: "techcomsdevops@gmail.com",
