@@ -5,7 +5,6 @@ pipeline{
     agent any
     environment {
         ECR_REGISTRY = "894228636591.dkr.ecr.ap-south-1.amazonaws.com/backend-springboot-maven-jar"
-        ECR_ACCOUNT_ID = "894228636591.dkr.ecr.ap-south-1.amazonaws.com"
         GITHUB_URL = "${params.url}"
         BRANCH = "${params.branch}"
     }
@@ -30,7 +29,7 @@ pipeline{
         }
         stage("login to dockerhub and push image"){
             steps { 
-                sh "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${ECR_ACCOUNT_ID}"
+                sh "aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 894228636591.dkr.ecr.ap-south-1.amazonaws.com"
                 sh "docker push ${ECR_REGISTRY}:${${BUILD_NUMBER}}"
                       
                   }
