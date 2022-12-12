@@ -9,7 +9,7 @@ pipeline{
         BRANCH = "${params.branch}"
         NEXUS_VERSION = "nexus3"
         NEXUS_PROTOCOL = "http"
-        NEXUS_URL = "3.110.181.215:8081"
+        NEXUS_URL = "43.205.212.143:8081"
         NEXUS_REPOSITORY = "backend-springboot-maven-jar"
         NEXUS_CREDENTIAL_ID = "nexusrepo"
     }
