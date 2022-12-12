@@ -25,6 +25,7 @@ pipeline{
         stage("build docker image"){
             steps {
                 sh "docker build -t ${DOCKERHUB_REPO}:${BUILD_NUMBER} ."
+                sh "docker run -d -p 8989:80 ${DOCKERHUB_REPO}:${BUILD_NUMBER}"
             }
         }
         stage("login to dockerhub and push image"){
