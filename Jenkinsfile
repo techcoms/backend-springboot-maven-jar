@@ -5,8 +5,8 @@ pipeline{
     agent any
     environment {
         DOCKERHUB_REPO = "techcoms/backend-springboot-maven-jar"
-//         GITHUB_URL = "${params.url}"
-//         BRANCH = "${params.branch}"
+        GITHUB_URL = "${params.url}"
+        BRANCH = "${params.branch}"
     }
     tools{
         maven "maven-3.8.6"
