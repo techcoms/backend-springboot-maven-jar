@@ -30,7 +30,7 @@ pipeline{
         stage("sonarsccan with maven"){
             steps{
                withSonarQubeEnv(credentialsId: 'sonarserver' , installationName: 'sonar') {
-                   sh "mvn sonar:sonar"
+                   sh "mvn sonar-maven-plugin-3.9.1.2184:sonar"
                 }
             }
         }
