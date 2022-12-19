@@ -27,6 +27,14 @@ pipeline{
                 sh "mvn clean package"
             }
         }
+        stage(sonarscan with maven){
+            steps{
+                 mvn clean verify sonar:sonar \
+                 -Dsonar.projectKey=backend-springboot-maven-jar \
+                 -Dsonar.host.url=http://52.66.212.249:9000 \
+                 -Dsonar.login=sqp_cbb778c82ffeaabee2e723afd2ede7dad4dfad1c
+              }
+        }
         stage("Publish to Nexus Repository ") {
             steps {
                 script{
