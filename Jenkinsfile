@@ -27,7 +27,7 @@ pipeline{
                 sh "mvn clean package"
             }
         }
-        stage(sonarscan with maven){
+        stage("sonarsccan with maven"){
             steps{
                  mvn clean verify sonar:sonar \
                  -Dsonar.projectKey=backend-springboot-maven-jar \
