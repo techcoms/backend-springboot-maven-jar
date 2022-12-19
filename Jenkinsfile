@@ -29,11 +29,10 @@ pipeline{
         }
         stage("sonarsccan with maven"){
             steps{
-                 mvn clean verify sonar:sonar \
-                 -Dsonar.projectKey=backend-springboot-maven-jar \
-                 -Dsonar.host.url=http://52.66.212.249:9000 \
-                 -Dsonar.login=sqp_cbb778c82ffeaabee2e723afd2ede7dad4dfad1c
-              }
+               withSonarQubeEnv(credentialsId: 'sonarserver' , installationName: 'sonar') {
+                   mvn clean verify sonar:sonar
+                }
+            }
         }
         stage("Publish to Nexus Repository ") {
             steps {
