@@ -22,13 +22,6 @@ pipeline{
                 sh "mvn clean package"
             }
         }
-        stage("sonarsccan with maven"){
-            steps{
-               withSonarQubeEnv(credentialsId: 'sonarserver' , installationName: 'sonar') {
-                   sh "mvn sonar-maven-plugin-4.7.0.2747:sonar"
-                }
-            }
-        }
         stage("build docker image"){
             steps {
                 sh "docker build -t ${DOCKERHUB_REPO}:${BUILD_NUMBER} ."
