@@ -8,7 +8,7 @@ public class HelloController {
     
     @RequestMapping("/")
     public String index() {
-        return "Hello Team, Welcome to AWS DevOps class..!!!";
+        return "Hi Team, I am Jithendra new joinee to Vodafone..!!!";
     }
     
 }
