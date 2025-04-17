@@ -9,7 +9,7 @@ pipeline{
         BRANCH = "${params.branch}"
     }
     tools{
-        maven "maven-3.8.6"
+        maven "maven-3.8.7"
     }
     stages{
         stage("git checkout"){
