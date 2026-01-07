@@ -40,7 +40,7 @@ pipeline {
 
         stage('Unit Tests') {
             steps {
-                sh 'mvn test'
+                sh 'mvn clean test'
             }
             post {
                 always {
