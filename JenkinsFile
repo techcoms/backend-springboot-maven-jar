@@ -139,35 +139,7 @@ pipeline {
             }
         }
 
-        stage('Create & Merge Pull Request') {
-            when { not { branch 'main' } }
-            steps {
-                //withCredentials([
-                    //string(credentialsId: 'github-creds', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')
-               // ]) 
-                   {
-                    sh '''
-                        set -e
-                        echo "$GITHUB_TOKEN" | gh auth login --with-token
-
-                        gh pr create \
-                          --base main \
-                          --head ${BRANCH_NAME} \
-                          --title "Merge ${BRANCH_NAME} to main" \
-                          --body "Automated PR created by Jenkins" || true
-                    '''
-
-                    timeout(time: 10, unit: 'MINUTES') {
-                        input message: "Pipeline verified. Merge to main?"
-                    }
-
-                    sh '''
-                        gh pr merge ${BRANCH_NAME} --merge
-                    '''
-                }
-            }
-        }
-
+        
         stage('Deploy to Production ECS') {
             when { branch 'main' }
             steps {
