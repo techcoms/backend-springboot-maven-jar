@@ -1,11 +1,12 @@
 package com.example;
 
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+// Change these two imports to JUnit 4
+import org.junit.Test;
+import static org.junit.Assert.assertTrue;
 
 public class SimpleTest {
     @Test
-    void pipelineTest() {
+    public void pipelineTest() {
         System.out.println("Running pipeline validation test...");
         assertTrue(true);
     }
