@@ -141,7 +141,6 @@ pipeline {
 
         
         stage('Deploy to Production ECS') {
-            when { branch 'main' }
             steps {
                 withCredentials([
                     usernamePassword(
