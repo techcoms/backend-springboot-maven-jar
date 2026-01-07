@@ -18,6 +18,7 @@ pipeline {
         ECS_SERVICE        = 'my-spring-service'
         AWS_CREDENTIAL_ID  = 'aws-credentials'
         ECR_REPOSITORY_URL = '974086408537.dkr.ecr.ap-south-1.amazonaws.com/my-java-app'
+        EXECUTION_ROLE_ARN = 'arn:aws:iam::974086408537:role/ecsTaskExecutionRole'
     }
 
     stages {
