@@ -142,9 +142,10 @@ pipeline {
         stage('Create & Merge Pull Request') {
             when { not { branch 'main' } }
             steps {
-                withCredentials([
-                    string(credentialsId: 'github-creds', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')
-                ]) {
+                //withCredentials([
+                    //string(credentialsId: 'github-creds', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')
+                ]) 
+                   {
                     sh '''
                         set -e
                         echo "$GITHUB_TOKEN" | gh auth login --with-token
