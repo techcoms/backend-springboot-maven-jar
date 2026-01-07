@@ -81,8 +81,8 @@ pipeline {
                         timeout(time: 3, unit: 'MINUTES') {
                             waitUntil {
                                 sh(
-                                  script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:${HOST_PORT}/ || echo '000'",
-                                  returnStdout: true
+                                    script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:${HOST_PORT}/ || echo '000'",
+                                    returnStdout: true
                                 ).trim() == '200'
                             }
                         }
@@ -104,51 +104,20 @@ pipeline {
                 ]) {
                     sh """
                         set -e
-                        echo "Initializing Terraform"
                         terraform init -input=false
 
-                        echo "Planning Infrastructure"
                         terraform plan -out=tfplan -input=false \
                           -var="aws_region=${AWS_DEFAULT_REGION}" \
                           -var="ecr_repo_name=${ECR_REPO}" \
                           -var="ecs_cluster_name=${ECS_CLUSTER}"
 
-                        echo "Applying Infrastructure"
                         terraform apply -auto-approve tfplan
                     """
                 }
             }
         }
 
-        stage('Create & Merge Pull Request') {
-            when { not { branch 'main' } }
-            steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: GITHUB_CREDENTIALS,
-                        usernameVariable: 'GITHUB_USER',
-                        passwordVariable: 'GITHUB_TOKEN'
-                    )
-                ]) {
-                    sh """
-                        gh auth login --with-token <<< "$GITHUB_TOKEN"
-
-                        gh pr create \
-                          --base main \
-                          --head ${env.BRANCH_NAME} \
-                          --title "Merge ${env.BRANCH_NAME} to main" \
-                          --body "Automated PR by Jenkins" || true
-                    """
-
-                    timeout(time: 10, unit: 'MINUTES') {
-                        input message: "Infra verified. Merge to main?"
-                    }
-
-                    sh "gh pr merge ${env.BRANCH_NAME} --merge"
-                }
-            }
-        }
-
+        /* 🔥 MOVED BEFORE PR STAGE */
         stage('Push Image to ECR') {
             when { branch 'main' }
             steps {
@@ -174,6 +143,35 @@ pipeline {
                         docker tag ${DOCKER_IMAGE} \$FULL_REPO_URL:latest
                         docker push \$FULL_REPO_URL:latest
                     """
+                }
+            }
+        }
+
+        stage('Create & Merge Pull Request') {
+            when { not { branch 'main' } }
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: GITHUB_CREDENTIALS,
+                        usernameVariable: 'GITHUB_USER',
+                        passwordVariable: 'GITHUB_TOKEN'
+                    )
+                ]) {
+                    sh """
+                        gh auth login --with-token <<< "\$GITHUB_TOKEN"
+
+                        gh pr create \
+                          --base main \
+                          --head ${env.BRANCH_NAME} \
+                          --title "Merge ${env.BRANCH_NAME} to main" \
+                          --body "Automated PR by Jenkins" || true
+                    """
+
+                    timeout(time: 10, unit: 'MINUTES') {
+                        input message: "Infra verified. Merge to main?"
+                    }
+
+                    sh "gh pr merge ${env.BRANCH_NAME} --merge"
                 }
             }
         }
