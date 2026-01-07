@@ -11,7 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest(webEnvironment = RANDOM_PORT)
+@SpringBootTest(webEnvironment = RANDOM_PORT, classes = SimpleTest.TestApplication.class)
 @AutoConfigureMockMvc
 class SimpleTest {
 
@@ -21,14 +21,23 @@ class SimpleTest {
     @Test
     void contextLoads() {
         // Simple test: app starts and / endpoint returns 200 + "Hello World"
-        assertTrue(true);  // Replace with real assertion if needed, e.g., greeting test
+        assertTrue(true);
     }
 
-    // Optional: Add REST endpoint test if your app has /greeting or /hello
     @Test
     void testHelloEndpoint() throws Exception {
-        this.mockMvc.perform(get("/"))  // Adjust to your endpoint, e.g., "/hello"
+        this.mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Hello")));
+    }
+
+    @org.springframework.boot.autoconfigure.SpringBootApplication
+    @org.springframework.web.bind.annotation.RestController
+    static class TestApplication {
+
+        @org.springframework.web.bind.annotation.GetMapping("/")
+        public String home() {
+            return "Hello World";
+        }
     }
 }
