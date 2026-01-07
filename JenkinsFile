@@ -143,7 +143,7 @@ pipeline {
             when { not { branch 'main' } }
             steps {
                 withCredentials([
-                    string(credentialsId: 'github-creds', variable: 'GITHUB_TOKEN')
+                    string(credentialsId: 'github-creds', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')
                 ]) {
                     sh '''
                         set -e
