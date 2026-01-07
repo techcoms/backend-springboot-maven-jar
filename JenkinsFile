@@ -46,7 +46,9 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_AUTH_TOKEN')]) {
+                withCredentials([
+                    string(credentialsId: 'sonarqube-token', variable: 'SONAR_AUTH_TOKEN')
+                ]) {
                     sh '''
                         mvn sonar:sonar \
                           -Dsonar.projectKey=spring-boot-demo \
@@ -68,33 +70,31 @@ pipeline {
                 sh "docker build -t ${DOCKER_IMAGE} ."
             }
         }
+
         stage('Test Docker Container') {
             steps {
                 script {
                     try {
                         sh """
-                            docker run -d --name ${CONTAINER_NAME} -p ${HOST_PORT}:${CONTAINER_PORT} ${DOCKER_IMAGE}
+                            docker run -d --name ${CONTAINER_NAME} \
+                              -p ${HOST_PORT}:${CONTAINER_PORT} ${DOCKER_IMAGE}
                         """
                         timeout(time: 3, unit: 'MINUTES') {
                             waitUntil {
-                                script {
-                                    def response = sh(
-                                        script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:${HOST_PORT}/ || echo '000'",
-                                        returnStdout: true
-                                    ).trim()
-                                    return response == '200'
-                                }
+                                sh(
+                                  script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:${HOST_PORT}/ || echo 000",
+                                  returnStdout: true
+                                ).trim() == '200'
                             }
                         }
-                        echo "Docker container started and application is responding!"
                     } finally {
-                        sh "docker stop ${CONTAINER_NAME} || true"
-                        sh "docker rm ${CONTAINER_NAME} || true"
+                        sh "docker rm -f ${CONTAINER_NAME} || true"
                     }
                 }
             }
         }
-        stage('Provision Infrastructure (Terraform DESTROY → APPLY)') {
+
+        stage('Provision Infrastructure (Terraform APPLY)') {
             steps {
                 withCredentials([
                     usernamePassword(
@@ -105,16 +105,9 @@ pipeline {
                 ]) {
                     sh '''
                         set -e
-
-                        echo "Terraform init"
                         terraform init -input=false
-                        # Import existing ECR into state
-                        terraform import aws_ecr_repository.app_repo my-java-app || true
-
-                        echo "Terraform APPLY (fresh infra)"
                         terraform apply -auto-approve \
                           -var="aws_region=${AWS_DEFAULT_REGION}" \
-                          -var="ecr_repo_name=${ECR_REPO}" \
                           -var="ecs_cluster_name=${ECS_CLUSTER}"
                     '''
                 }
@@ -132,16 +125,15 @@ pipeline {
                 ]) {
                     sh '''
                         set -e
-                        ECR_REPO_URL=$(terraform output -raw ecr_repository_url)
 
-                        aws ecr get-login-password --region ap-south-1 \
-                          | docker login --username AWS --password-stdin ${ECR_REPO_URL%/*}
+                        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} \
+                          | docker login --username AWS --password-stdin ${ECR_REPOSITORY_URL%/*}
 
-                        docker tag ${DOCKER_IMAGE} ${ECR_REPO_URL}:${BUILD_NUMBER}
-                        docker tag ${DOCKER_IMAGE} ${ECR_REPO_URL}:latest
+                        docker tag ${DOCKER_IMAGE} ${ECR_REPOSITORY_URL}:${BUILD_NUMBER}
+                        docker tag ${DOCKER_IMAGE} ${ECR_REPOSITORY_URL}:latest
 
-                        docker push ${ECR_REPO_URL}:${BUILD_NUMBER}
-                        docker push ${ECR_REPO_URL}:latest
+                        docker push ${ECR_REPOSITORY_URL}:${BUILD_NUMBER}
+                        docker push ${ECR_REPOSITORY_URL}:latest
                     '''
                 }
             }
@@ -151,7 +143,7 @@ pipeline {
             when { not { branch 'main' } }
             steps {
                 withCredentials([
-                    string(credentialsId: 'github-creds' )
+                    string(credentialsId: 'github-creds', variable: 'GITHUB_TOKEN')
                 ]) {
                     sh '''
                         set -e
@@ -165,7 +157,7 @@ pipeline {
                     '''
 
                     timeout(time: 10, unit: 'MINUTES') {
-                        input message: "Infrastructure recreated. Merge to main?"
+                        input message: "Pipeline verified. Merge to main?"
                     }
 
                     sh '''
