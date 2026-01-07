@@ -9,7 +9,7 @@ pipeline {
         // Docker settings
         DOCKER_IMAGE      = "${APP_NAME}:${BUILD_NUMBER}"
         CONTAINER_NAME    = "test-container-${BUILD_NUMBER}"
-        HOST_PORT         = '8081'
+        HOST_PORT         = '8083'
         CONTAINER_PORT    = '8080'
 
         // SonarQube setting
