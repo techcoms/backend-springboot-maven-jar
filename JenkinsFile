@@ -108,12 +108,8 @@ pipeline {
 
                         echo "Terraform init"
                         terraform init -input=false
-
-                        echo "Terraform DESTROY (force)"
-                        terraform destroy -auto-approve \
-                          -var="aws_region=${AWS_DEFAULT_REGION}" \
-                          -var="ecr_repo_name=${ECR_REPO}" \
-                          -var="ecs_cluster_name=${ECS_CLUSTER}"
+                        # Import existing ECR into state
+                        terraform import aws_ecr_repository.app_repo my-java-app || true
 
                         echo "Terraform APPLY (fresh infra)"
                         terraform apply -auto-approve \
