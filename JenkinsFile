@@ -16,7 +16,6 @@ pipeline {
         ECS_SERVICE        = 'my-spring-service'
 
         AWS_CREDENTIAL_ID  = 'aws-credentials'
-        GITHUB_CREDENTIALS = 'github-creds'
     }
 
     stages {
@@ -156,7 +155,7 @@ pipeline {
             when { not { branch 'main' } }
             steps {
                 withCredentials([
-                    string(credentialsId: GITHUB_CREDENTIALS, variable: 'GITHUB_TOKEN')
+                    string(credentialsId: 'github-creds' )
                 ]) {
                     sh '''
                         set -e
