@@ -144,7 +144,7 @@ pipeline {
             steps {
                 //withCredentials([
                     //string(credentialsId: 'github-creds', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')
-                ]) 
+               // ]) 
                    {
                     sh '''
                         set -e
