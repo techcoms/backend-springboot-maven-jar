@@ -119,7 +119,7 @@ pipeline {
 
         /* 🔥 MOVED BEFORE PR STAGE */
         stage('Push Image to ECR') {
-            when { branch 'main' }
+            when { branch 'feature' }
             steps {
                 withCredentials([
                     usernamePassword(
