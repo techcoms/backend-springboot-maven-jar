@@ -95,7 +95,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: AWS_CREDENTIAL_ID, passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
                     sh """
                         echo "Initializing Terraform..."
-                        cd terraform
+                        // Files are in root, no cd needed
                         
                         terraform init -input=false
                         
@@ -143,11 +143,9 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: AWS_CREDENTIAL_ID, passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
                     sh """
                         echo "Retrieving ECR details from Terraform..."
-                        cd terraform
                         FULL_REPO_URL=\$(terraform output -raw ecr_repository_url)
                         # Extract the registry domain (everything before the first /)
                         REGISTRY_DOMAIN=\$(echo \$FULL_REPO_URL | cut -d'/' -f1)
-                        cd ..
                         
                         echo "Logging into ECR: \$REGISTRY_DOMAIN"
                         aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin \$REGISTRY_DOMAIN
