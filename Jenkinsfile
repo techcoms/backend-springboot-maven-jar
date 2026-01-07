@@ -12,10 +12,8 @@ pipeline {
         HOST_PORT         = '8081'
         CONTAINER_PORT    = '8080'
 
-        // SonarQube settings
-        SONAR_PROJECT_KEY = 'my-java-app'                          // Change if different in SonarQube
+        // SonarQube setting
         SONAR_HOST_URL    = 'http://13.126.141.57:9000'
-        SONAR_TOKEN       = credentials('sonarqube-token')         // Credential ID with your token
 
         // Production Tomcat settings - YOUR PROVIDED SERVER
         TOMCAT_HOST       = '13.126.141.57'
@@ -51,12 +49,12 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') {
+                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_AUTH_TOKEN')]) {
                     sh """
                         mvn sonar:sonar \
-                          -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                          -Dsonar.projectKey=spring-boot-demo \
                           -Dsonar.host.url=${SONAR_HOST_URL} \
-                          -Dsonar.login=${SONAR_TOKEN}
+                          -Dsonar.login=\${SONAR_AUTH_TOKEN}
                     """
                 }
             }
