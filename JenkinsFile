@@ -89,6 +89,28 @@ pipeline {
                 }
             }
         }
+        stage('Provision Infrastructure (Terraform)') {
+            // Run on all branches (feature and main) so verification happens before merge
+            steps {
+                withCredentials([usernamePassword(credentialsId: AWS_CREDENTIAL_ID, passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+                    sh """
+                        echo "Initializing Terraform..."
+                        cd terraform
+                        
+                        terraform init -input=false
+                        
+                        echo "Planning Infrastructure..."
+                        terraform plan -out=tfplan -input=false \
+                          -var="aws_region=${AWS_DEFAULT_REGION}" \
+                          -var="ecr_repo_name=${ECR_REPO}" \
+                          -var="ecs_cluster_name=${ECS_CLUSTER}"
+                        
+                        echo "Applying Infrastructure..."
+                        terraform apply -input=false -auto-approve tfplan
+                    """
+                }
+            }
+        }
         stage('Create & Merge Pull Request') {
             when {
                 not { branch 'main' }
@@ -102,47 +124,14 @@ pipeline {
                         """
                         
                         timeout(time: 10, unit: 'MINUTES') {
-                            input message: "Tests passed on ${env.BRANCH_NAME}. Merge to main?"
+                            input message: "Infra verified on ${env.BRANCH_NAME}. Merge to main?"
                         }
                         
                         sh """
                             echo "Merging PR for ${env.BRANCH_NAME}..."
-                            gh pr merge ${env.BRANCH_NAME} --merge --delete-branch
+                            gh pr merge ${env.BRANCH_NAME} --merge
                         """
                     }
-                }
-            }
-        }
-        stage('Deploy Review App') {
-            when {
-                not { branch 'main' }
-            }
-            steps {
-                echo "Preview would be available at a temporary URL if configured"
-            }
-        }
-        stage('Provision Infrastructure (Terraform)') {
-            when {
-                branch 'main'
-            }
-            steps {
-                withCredentials([usernamePassword(credentialsId: AWS_CREDENTIAL_ID, passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
-                    // Create tfvars file dynamically or use -var arguments
-                    sh """
-                        echo "Initializing Terraform..."
-                        cd terraform
-                        
-                        terraform init -input=false
-                        
-                         echo "Planning Infrastructure..."
-                        terraform plan -out=tfplan -input=false \
-                          -var="aws_region=${AWS_DEFAULT_REGION}" \
-                          -var="ecr_repo_name=${ECR_REPO}" \
-                          -var="ecs_cluster_name=${ECS_CLUSTER}"
-                        
-                        echo "Applying Infrastructure..."
-                        terraform apply -input=false -auto-approve tfplan
-                    """
                 }
             }
         }
