@@ -97,8 +97,8 @@ pipeline {
                 script {
                     withCredentials([string(credentialsId: 'github-creds', variable: 'GITHUB_TOKEN')]) {
                         sh """
-                             echo "Creating PR to merge ${BRANCH_NAME} into main..."
-                             gh pr create --base main --head ${BRANCH_NAME} --title "Merge ${BRANCH_NAME} to main" --body "Automated PR created by Jenkins" || echo "PR might already exist"
+                             echo "Creating PR to merge ${env.BRANCH_NAME} into main..."
+                             gh pr create --base main --head ${env.BRANCH_NAME} --title "Merge ${env.BRANCH_NAME} to main" --body "Automated PR created by Jenkins" || echo "PR might already exist"
                         """
                     }
                 }
@@ -109,7 +109,6 @@ pipeline {
                 not { branch 'main' }
             }
             steps {
-                echo "=== Review App for branch: ${env.BRANCH_NAME} ==="
                 echo "Preview would be available at a temporary URL if configured"
             }
         }
