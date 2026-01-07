@@ -1,14 +1,14 @@
-# Check if ECR repository already exists
-data "aws_ecr_repository" "existing" {
-  name = var.ecr_repo_name
-}
+# Get all ECR repositories
+data "aws_ecr_repositories" "all" {}
 
-# Local flag to determine existence
 locals {
-  ecr_exists = can(data.aws_ecr_repository.existing.repository_url)
+  ecr_exists = contains(
+    data.aws_ecr_repositories.all.names,
+    var.ecr_repo_name
+  )
 }
 
-# Create ECR repo ONLY if it does not exist
+# Create ECR repo only if it does NOT exist
 resource "aws_ecr_repository" "app_repo" {
   count = local.ecr_exists ? 0 : 1
 
@@ -19,7 +19,7 @@ resource "aws_ecr_repository" "app_repo" {
   }
 }
 
-# ECS Cluster (unchanged)
+# ECS Cluster
 resource "aws_ecs_cluster" "main_cluster" {
   name = var.ecs_cluster_name
 
