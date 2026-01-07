@@ -1,14 +1,3 @@
-provider "aws" {
-  region = var.aws_region
-}
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 4.0"
-    }
-  }
-}
 resource "aws_ecr_repository" "app_repo" {
   name                 = var.ecr_repo_name
   image_tag_mutability = "MUTABLE"
