@@ -97,46 +97,47 @@ pipeline {
             }
         }
 
-        stage('Deploy to ECS') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: AWS_CREDENTIAL_ID, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    sh '''
-                        set -e
-                        
-                        # 1. Register new Task Definition (Updates the image to the new BUILD_NUMBER)
-                        echo "Registering new task definition version..."
-                        NEW_TASK_DEF=$(aws ecs register-task-definition \
-                            --family ${APP_NAME} \
-                            --container-definitions "[{\\"name\\":\\"${APP_NAME}\\",\\"image\\":\\"${ECR_REPOSITORY_URL}:${BUILD_NUMBER}\\",\\"portMappings\\":[{\\"containerPort\\":${CONTAINER_PORT},\\"hostPort\\":${CONTAINER_PORT}}],\\"essential\\":true}]" \
-                            --network-mode awsvpc \
-                            --requires-compatibilities FARGATE \
-                            --cpu "256" \
-                            --memory "512" \
-                            --execution-role-arn ${EXECUTION_ROLE_ARN} \
-                            --region ${AWS_DEFAULT_REGION})
+        stage('Deploy to Production ECS') {
+    steps {
+        withCredentials([
+            usernamePassword(credentialsId: AWS_CREDENTIAL_ID, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')
+        ]) {
+            sh '''
+                set -e
+                
+                # 1. Register Task Definition (Already working for you!)
+                aws ecs register-task-definition \
+                    --family ${APP_NAME} \
+                    --container-definitions "[{\\"name\\":\\"${APP_NAME}\\",\\"image\\":\\"${ECR_REPOSITORY_URL}:${BUILD_NUMBER}\\",\\"portMappings\\":[{\\"containerPort\\":${CONTAINER_PORT},\\"hostPort\\":${CONTAINER_PORT}}],\\"essential\\":true}]" \
+                    --network-mode awsvpc \
+                    --requires-compatibilities FARGATE \
+                    --cpu "256" \
+                    --memory "512" \
+                    --execution-role-arn ${EXECUTION_ROLE_ARN} \
+                    --region ${AWS_DEFAULT_REGION}
 
-                        # 2. Check if Service exists
-                        SERVICE_STATUS=$(aws ecs describe-services --cluster ${ECS_CLUSTER} --services ${ECS_SERVICE} --region ${AWS_DEFAULT_REGION} --query 'services[0].status' --output text)
+                # 2. Check if Service exists - Fixed Logic
+                SERVICE_STATUS=$(aws ecs describe-services --cluster ${ECS_CLUSTER} --services ${ECS_SERVICE} --region ${AWS_DEFAULT_REGION} --query 'services[0].status' --output text)
 
-                        if [ "$SERVICE_STATUS" == "ACTIVE" ]; then
-                            echo "Updating existing service..."
-                            aws ecs update-service --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --task-definition ${APP_NAME} --region ${AWS_DEFAULT_REGION} --force-new-deployment
-                        else
-                            echo "Creating new service..."
-                            aws ecs create-service \
-                                --cluster ${ECS_CLUSTER} \
-                                --service-name ${ECS_SERVICE} \
-                                --task-definition ${APP_NAME} \
-                                --desired-count 1 \
-                                --launch-type FARGATE \
-                                --network-configuration "awsvpcConfiguration={subnets=[${SUBNET_IDS}],securityGroups=[${SECURITY_GROUP_ID}],assignPublicIp=ENABLED}" \
-                                --region ${AWS_DEFAULT_REGION}
-                        fi
-                    '''
-                }
-            }
+                if [ "$SERVICE_STATUS" = "ACTIVE" ]; then
+                    echo "Service exists. Updating..."
+                    aws ecs update-service --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --task-definition ${APP_NAME} --region ${AWS_DEFAULT_REGION} --force-new-deployment
+                else
+                    echo "Service not found. Creating new service..."
+                    # REPLACE THESE WITH THE IDs YOU FOUND IN STEP 1
+                    aws ecs create-service \
+                        --cluster ${ECS_CLUSTER} \
+                        --service-name ${ECS_SERVICE} \
+                        --task-definition ${APP_NAME} \
+                        --desired-count 1 \
+                        --launch-type FARGATE \
+                        --network-configuration "awsvpcConfiguration={subnets=[subnet-0123456789abcdef0],securityGroups=[sg-0123456789abcdef0],assignPublicIp=ENABLED}" \
+                        --region ${AWS_DEFAULT_REGION}
+                fi
+            '''
         }
     }
+}
 
     post {
         always {
