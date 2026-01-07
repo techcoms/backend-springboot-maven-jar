@@ -2,14 +2,17 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME           = 'my-java-app'
-        DOCKER_IMAGE       = "${APP_NAME}:${BUILD_NUMBER}"
-        CONTAINER_NAME     = "test-container-${BUILD_NUMBER}"
-        HOST_PORT          = '8083'
-        CONTAINER_PORT     = '8080'
+        // Application
+        APP_NAME       = 'my-java-app'
+        DOCKER_IMAGE   = "${APP_NAME}:${BUILD_NUMBER}"
+        CONTAINER_NAME = "test-container-${BUILD_NUMBER}"
+        HOST_PORT      = '8083'
+        CONTAINER_PORT = '8080'
 
-        SONAR_HOST_URL     = 'http://13.126.141.57:9000'
+        // SonarQube
+        SONAR_HOST_URL = 'http://13.126.141.57:9000'
 
+        // AWS
         AWS_DEFAULT_REGION = 'ap-south-1'
         ECR_REPO           = 'my-java-app'
         ECS_CLUSTER        = 'my-production-cluster'
@@ -76,7 +79,7 @@ pipeline {
                     try {
                         sh """
                             docker run -d --name ${CONTAINER_NAME} \
-                            -p ${HOST_PORT}:${CONTAINER_PORT} ${DOCKER_IMAGE}
+                              -p ${HOST_PORT}:${CONTAINER_PORT} ${DOCKER_IMAGE}
                         """
                         timeout(time: 3, unit: 'MINUTES') {
                             waitUntil {
@@ -104,16 +107,20 @@ pipeline {
                 ]) {
                     sh '''
                         set -e
+
+                        echo "Terraform init"
                         terraform init -input=false
 
-                        # Import ECR repo if it already exists (safe & idempotent)
+                        echo "Import ECR repo if it already exists"
                         terraform import aws_ecr_repository.app_repo my-java-app || true
 
+                        echo "Terraform plan"
                         terraform plan -out=tfplan -input=false \
                           -var="aws_region=${AWS_DEFAULT_REGION}" \
                           -var="ecr_repo_name=${ECR_REPO}" \
                           -var="ecs_cluster_name=${ECS_CLUSTER}"
 
+                        echo "Terraform apply"
                         terraform apply -auto-approve tfplan
                     '''
                 }
