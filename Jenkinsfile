@@ -60,7 +60,7 @@ pipeline {
             }
         }
         
-        stage('Package WAR') {
+        stage('Package jar') {
             steps {
                 sh 'mvn package -DskipTests'
             }
