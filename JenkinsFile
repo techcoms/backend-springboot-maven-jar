@@ -81,7 +81,7 @@ pipeline {
                         timeout(time: 3, unit: 'MINUTES') {
                             waitUntil {
                                 sh(
-                                  script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:${HOST_PORT}/",
+                                  script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:${HOST_PORT}/ || echo '000'",
                                   returnStdout: true
                                 ).trim() == '200'
                             }
