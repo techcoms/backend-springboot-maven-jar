@@ -80,11 +80,12 @@ pipeline {
                             docker run -d --name ${CONTAINER_NAME} -p ${HOST_PORT}:${CONTAINER_PORT} ${DOCKER_IMAGE}
                         """
 
-                        timeout(time: 3, unit: 'MINUTES') {
+                        timeout(time: 5, unit: 'MINUTES') {
                             waitUntil {
                                 script {
+                                    // FIXED: Using localhost prevents connection refused errors
                                     def response = sh(
-                                        script: "curl -s -o /dev/null -w '%{http_code}' http://13.126.141.57/:${HOST_PORT}/",
+                                        script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:${HOST_PORT}/",
                                         returnStdout: true
                                     ).trim()
                                     return response == '200'
