@@ -63,7 +63,6 @@ pipeline {
         stage('Package WAR') {
             steps {
                 sh 'mvn package -DskipTests'
-                archiveArtifacts artifacts: 'target/*.war', fingerprint: true
             }
         }
 
