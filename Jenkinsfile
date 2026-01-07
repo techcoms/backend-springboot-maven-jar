@@ -85,8 +85,9 @@ pipeline {
                         timeout(time: 3, unit: 'MINUTES') {
                             waitUntil {
                                 script {
+                                    // FIXED: Using localhost instead of public IP to permit local verification
                                     def response = sh(
-                                        script: "curl -s -o /dev/null -w '%{http_code}' http://13.126.141.57:${HOST_PORT}/",
+                                        script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:${HOST_PORT}/",
                                         returnStdout: true
                                     ).trim()
                                     return response == '200'
