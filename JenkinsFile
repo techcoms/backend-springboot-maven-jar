@@ -48,12 +48,12 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_AUTH_TOKEN')]) {
-                    sh """
+                    sh '''
                         mvn sonar:sonar \
                           -Dsonar.projectKey=spring-boot-demo \
                           -Dsonar.host.url=${SONAR_HOST_URL} \
-                          -Dsonar.login=\${SONAR_AUTH_TOKEN}
-                    """
+                          -Dsonar.login=${SONAR_AUTH_TOKEN}
+                    '''
                 }
             }
         }
@@ -102,9 +102,12 @@ pipeline {
                         passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                     )
                 ]) {
-                    sh """
+                    sh '''
                         set -e
                         terraform init -input=false
+
+                        # Import ECR repo if it already exists (safe & idempotent)
+                        terraform import aws_ecr_repository.app_repo my-java-app || true
 
                         terraform plan -out=tfplan -input=false \
                           -var="aws_region=${AWS_DEFAULT_REGION}" \
@@ -112,12 +115,13 @@ pipeline {
                           -var="ecs_cluster_name=${ECS_CLUSTER}"
 
                         terraform apply -auto-approve tfplan
-                    """
+                    '''
                 }
             }
         }
 
         stage('Push Image to ECR') {
+            when { branch 'feature' }
             steps {
                 withCredentials([
                     usernamePassword(
@@ -126,21 +130,19 @@ pipeline {
                         passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                     )
                 ]) {
-                    sh """
+                    sh '''
                         set -e
-                        FULL_REPO_URL=\$(terraform output -raw ecr_repository_url)
-                        REGISTRY_DOMAIN=\$(echo \$FULL_REPO_URL | cut -d'/' -f1)
+                        ECR_REPO_URL=$(terraform output -raw ecr_repository_url)
 
-                        aws ecr get-login-password \
-                          --region ${AWS_DEFAULT_REGION} \
-                        | docker login --username AWS --password-stdin \$REGISTRY_DOMAIN
+                        aws ecr get-login-password --region ap-south-1 \
+                          | docker login --username AWS --password-stdin ${ECR_REPO_URL%/*}
 
-                        docker tag ${DOCKER_IMAGE} \$FULL_REPO_URL:${BUILD_NUMBER}
-                        docker push \$FULL_REPO_URL:${BUILD_NUMBER}
+                        docker tag ${DOCKER_IMAGE} ${ECR_REPO_URL}:${BUILD_NUMBER}
+                        docker tag ${DOCKER_IMAGE} ${ECR_REPO_URL}:latest
 
-                        docker tag ${DOCKER_IMAGE} \$FULL_REPO_URL:latest
-                        docker push \$FULL_REPO_URL:latest
-                    """
+                        docker push ${ECR_REPO_URL}:${BUILD_NUMBER}
+                        docker push ${ECR_REPO_URL}:latest
+                    '''
                 }
             }
         }
@@ -149,28 +151,26 @@ pipeline {
             when { not { branch 'main' } }
             steps {
                 withCredentials([
-                    usernamePassword(
-                        credentialsId: GITHUB_CREDENTIALS,
-                        usernameVariable: 'GITHUB_USER',
-                        passwordVariable: 'GITHUB_TOKEN'
-                    )
+                    string(credentialsId: GITHUB_CREDENTIALS, variable: 'GITHUB_TOKEN')
                 ]) {
-                    sh """
+                    sh '''
                         set -e
                         echo "$GITHUB_TOKEN" | gh auth login --with-token
 
                         gh pr create \
                           --base main \
-                          --head ${env.BRANCH_NAME} \
-                          --title "Merge ${env.BRANCH_NAME} to main" \
-                          --body "Automated PR by Jenkins" || true
-                    """
+                          --head ${BRANCH_NAME} \
+                          --title "Merge ${BRANCH_NAME} to main" \
+                          --body "Automated PR created by Jenkins" || true
+                    '''
 
                     timeout(time: 10, unit: 'MINUTES') {
-                        input message: "Infra verified. Merge to main?"
+                        input message: "Infrastructure verified. Merge to main?"
                     }
 
-                    sh "gh pr merge ${env.BRANCH_NAME} --merge"
+                    sh '''
+                        gh pr merge ${BRANCH_NAME} --merge
+                    '''
                 }
             }
         }
@@ -185,13 +185,13 @@ pipeline {
                         passwordVariable: 'AWS_SECRET_ACCESS_KEY'
                     )
                 ]) {
-                    sh """
+                    sh '''
                         aws ecs update-service \
                           --cluster ${ECS_CLUSTER} \
                           --service ${ECS_SERVICE} \
                           --force-new-deployment \
                           --region ${AWS_DEFAULT_REGION}
-                    """
+                    '''
                 }
             }
         }
