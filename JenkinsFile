@@ -1,1 +1,196 @@
-pipeline
+pipeline {
+    agent any
+    
+    environment {
+        // Application settings
+        APP_NAME          = 'my-java-app'
+        WAR_FILE          = 'target/*.war'
+
+        // Docker settings
+        DOCKER_IMAGE      = "${APP_NAME}:${BUILD_NUMBER}"
+        CONTAINER_NAME    = "test-container-${BUILD_NUMBER}"
+        HOST_PORT         = '8083'
+        CONTAINER_PORT    = '8080'
+
+        // SonarQube setting
+        SONAR_HOST_URL    = 'http://13.126.141.57:9000'
+
+        // AWS ECS Settings - UPDATE THESE VALUES
+        AWS_DEFAULT_REGION = 'ap-south-1'
+        ECR_REGISTRY       = '123456789012.dkr.ecr.ap-south-1.amazonaws.com'
+        ECR_REPO           = 'my-java-app'
+        ECS_CLUSTER        = 'my-production-cluster'
+        ECS_SERVICE        = 'my-spring-service'
+        AWS_CREDENTIAL_ID  = 'aws-credentials' // ID of "Username with password" credential in Jenkins (Access Key / Secret Key)
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: "feature", url: "https://github.com/techcoms/backend-springboot-maven-jar.git"
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean compile'
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                sh 'mvn clean test'
+            }
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_AUTH_TOKEN')]) {
+                    sh """
+                        mvn sonar:sonar \
+                          -Dsonar.projectKey=spring-boot-demo \
+                          -Dsonar.host.url=${SONAR_HOST_URL} \
+                          -Dsonar.login=\${SONAR_AUTH_TOKEN}
+                    """
+                }
+            }
+        }
+        
+        stage('Package jar') {
+            steps {
+                sh 'mvn package -DskipTests'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${DOCKER_IMAGE} ."
+            }
+        }
+
+        stage('Test Docker Container') {
+            steps {
+                script {
+                    try {
+                        sh """
+                            docker run -d --name ${CONTAINER_NAME} -p ${HOST_PORT}:${CONTAINER_PORT} ${DOCKER_IMAGE}
+                        """
+
+                        timeout(time: 3, unit: 'MINUTES') {
+                            waitUntil {
+                                script {
+                                    // FIXED: Using localhost and handling exit codes (|| echo "000") to prevent pipeline failure during startup
+                                    def response = sh(
+                                        script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:${HOST_PORT}/ || echo '000'",
+                                        returnStdout: true
+                                    ).trim()
+                                    return response == '200'
+                                }
+                            }
+                        }
+
+                        echo "Docker container started and application is responding!"
+                    } finally {
+                        sh "docker stop ${CONTAINER_NAME} || true"
+                        sh "docker rm ${CONTAINER_NAME} || true"
+                    }
+                }
+            }
+        }
+
+        stage('Create Pull Request') {
+            when {
+                not { branch 'main' }
+            }
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+                        // Attempt to create PR using gh CLI
+                        sh """
+                             echo "Creating PR to merge ${BRANCH_NAME} into main..."
+                             gh pr create --base main --head ${BRANCH_NAME} --title "Merge ${BRANCH_NAME} to main" --body "Automated PR created by Jenkins" || echo "PR might already exist"
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Review App') {
+            when {
+                not { branch 'main' }
+            }
+            steps {
+                echo "=== Review App for branch: ${env.BRANCH_NAME} ==="
+                echo "Preview would be available at a temporary URL if configured"
+            }
+        }
+
+        stage('Push Image to ECR') {
+            when {
+                branch 'main'
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: AWS_CREDENTIAL_ID, passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+                    sh """
+                        echo "Logging into ECR..."
+                        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                        
+                        echo "Pushing image to ECR..."
+                        docker tag ${DOCKER_IMAGE} ${ECR_REGISTRY}/${ECR_REPO}:${BUILD_NUMBER}
+                        docker push ${ECR_REGISTRY}/${ECR_REPO}:${BUILD_NUMBER}
+                        
+                        docker tag ${DOCKER_IMAGE} ${ECR_REGISTRY}/${ECR_REPO}:latest
+                        docker push ${ECR_REGISTRY}/${ECR_REPO}:latest
+                    """
+                }
+            }
+        }
+
+        stage('Approval for Production') {
+            when { branch 'main' }
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    input message: 'Review passed? Approve to deploy to PRODUCTION'
+                }
+            }
+        }
+
+        stage('Deploy to Production ECS') {
+            when {
+                branch 'main'
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: AWS_CREDENTIAL_ID, passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+                    sh """
+                        echo "Updating ECS Service..."
+                        // Force new deployment to pick up the 'latest' image we just pushed
+                        aws ecs update-service --cluster ${ECS_CLUSTER} --service ${ECS_SERVICE} --force-new-deployment --region ${AWS_DEFAULT_REGION}
+                    """
+                }
+                echo "=================================================================="
+                echo "Deployment triggered on ECS Cluster: ${ECS_CLUSTER}"
+                echo "Service: ${ECS_SERVICE}"
+                echo "=================================================================="
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs(deleteDirs: true)
+            sh 'docker rmi ${DOCKER_IMAGE} || true'
+        }
+        success {
+            echo 'CI/CD Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed - please check the logs.'
+        }
+    }
+}
+
