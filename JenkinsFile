@@ -127,6 +127,30 @@ pipeline {
                 }
             }
         }
+        stage('Create & Merge Pull Request') {
+            when {
+                not { branch 'main' }
+            }
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'github-creds', variable: 'GITHUB_TOKEN')]) {
+                        sh """
+                             echo "Creating PR to merge ${env.BRANCH_NAME} into main..."
+                             gh pr create --base main --head ${env.BRANCH_NAME} --title "Merge ${env.BRANCH_NAME} to main" --body "Automated PR created by Jenkins" || echo "PR might already exist"
+                        """
+                        
+                        timeout(time: 10, unit: 'MINUTES') {
+                            input message: "Infra verified on ${env.BRANCH_NAME}. Merge to main?"
+                        }
+                        
+                        sh """
+                            echo "Merging PR for ${env.BRANCH_NAME}..."
+                            gh pr merge ${env.BRANCH_NAME} --merge
+                        """
+                    }
+                }
+            }
+        }
 
         stage('Deploy to Production ECS') {
             steps {
