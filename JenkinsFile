@@ -133,8 +133,10 @@ pipeline {
             }
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'github-creds', variable: 'GITHUB_TOKEN')]) {
+                    withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GH_USER', passwordVariable: 'GH_TOKEN')]) {
                         sh """
+                          set -e
+                             echo "$GITHUB_TOKEN" | gh auth login --with-token
                              echo "Creating PR to merge ${env.BRANCH_NAME} into main..."
                              gh pr create --base main --head ${env.BRANCH_NAME} --title "Merge ${env.BRANCH_NAME} to main" --body "Automated PR created by Jenkins" || echo "PR might already exist"
                         """
