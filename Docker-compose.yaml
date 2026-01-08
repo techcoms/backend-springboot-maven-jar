@@ -1,8 +1,0 @@
-version: "3.9"
-services:
-  webapp:
-    image: ${DOCKERHUB_REPO}:${BUILD_NUMBER}
-    ports:
-      - "8080:8080"
-    volumes:
-      - "docker/data:/data"
