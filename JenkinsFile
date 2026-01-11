@@ -88,7 +88,7 @@ pipeline {
                 not { branch 'main' }
             }
             steps {
-                withCredentials([string(credentialsId: 'github-creds', variable: 'GITHUB_TOKEN')]) {
+                withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
                     sh '''
                         set -e
                         CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
