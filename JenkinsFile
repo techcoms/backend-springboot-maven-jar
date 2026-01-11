@@ -97,12 +97,7 @@ pipeline {
 
                         echo "$GITHUB_TOKEN" | gh auth login --with-token
 
-                        gh pr create \
-                          --base main \
-                          --head "$CURRENT_BRANCH" \
-                          --title "Merge $CURRENT_BRANCH to main" \
-                          --body "Automated PR created by Jenkins" \
-                          || echo "PR already exists"
+                        gh pr create --base main --head ${env.BRANCH_NAME} --title "Merge ${env.BRANCH_NAME} to main" --body "Automated PR created by Jenkins" || echo "PR might already exist"
                     '''
                 }
             }
